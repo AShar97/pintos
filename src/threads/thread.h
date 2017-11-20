@@ -8,6 +8,9 @@
 /*My Implementation*/
 #include  <kernel/list.h>
 
+#include "threads/alarm.h"
+
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -26,6 +29,11 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
+/*My Implementation*/
+#define NICE_MAX 20
+#define NICE_DEFAULT 0
+#define NICE_MIN -20
 
 /* A kernel thread or user process.
 
@@ -86,8 +94,15 @@ typedef int tid_t;
 struct thread
   {
     /*My Implementation*/
+    struct alarm alrm;                  /* alarm object */
+
     int orig_priority;  /* add a new variable to store original priority when switching it up */
     int64_t sleep_ticks;  /* add a new variable to store ticks the thread should sleep */
+
+    struct list locks; /* the list of locks that it holds */
+    bool donated; /* whether the thread has been donated priority */
+    struct lock *blocked; /* by which lock this thread is blocked */
+
 
     /* Owned by thread.c. */
     tid_t tid;                          /* Thread identifier. */
@@ -147,15 +162,24 @@ int thread_get_load_avg (void);
 
 
 /*My Implementation*/
-bool sleep_ticks_less (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
+bool sleep_ticks_less (const struct list_elem *, const struct list_elem *, void *);
 
-bool priority_more (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
+bool priority_more (const struct list_elem *, const struct list_elem *, void *);
 
 enum intr_level thread_priority_temporarily_up (void);
-void thread_block_till (int64_t ticks);
+void thread_block_till (int64_t);
 void thread_set_next_wakeup (void);
 void thread_check_wakeup(void);
-void thread_priority_restore (enum intr_level old_level);
+void thread_priority_restore (enum intr_level);
+
+
+void sort_thread_list (struct list *);
+
+
+void thread_set_priority_other (struct thread *, int, bool);
+void thread_yield_head (struct thread *);
+
+bool priority_more_equal (const struct list_elem *, const struct list_elem *, void *);
 
 
 #endif /* threads/thread.h */

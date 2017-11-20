@@ -21,6 +21,9 @@
 #include "threads/palloc.h"
 #include "threads/pte.h"
 #include "threads/thread.h"
+/*My Implementation*/
+#include "threads/alarm.h"
+
 #ifdef USERPROG
 #include "userprog/process.h"
 #include "userprog/exception.h"
@@ -71,8 +74,8 @@ int
 main (void)
 {
   char **argv;
-  
-  /* Clear BSS and get machine's RAM size. */  
+
+  /* Clear BSS and get machine's RAM size. */
   ram_init ();
 
   /* Break command line into arguments and parse options. */
@@ -82,7 +85,11 @@ main (void)
   /* Initialize ourselves as a thread so we can use locks,
      then enable console locking. */
   thread_init ();
-  console_init ();  
+
+  /*My Implementation*/
+  alarm_init ();
+
+  console_init ();
 
   /* Greet user. */
   printf ("Pintos booting with %'zu kB RAM...\n", ram_pages * PGSIZE / 1024);
@@ -120,7 +127,7 @@ main (void)
 #endif
 
   printf ("Boot complete.\n");
-  
+
   /* Run actions specified on kernel command line. */
   run_actions (argv);
 
@@ -135,7 +142,7 @@ main (void)
 
 /* Clear BSS and obtain RAM size from loader. */
 static void
-ram_init (void) 
+ram_init (void)
 {
   /* The "BSS" is a segment that should be initialized to zeros.
      It isn't actually stored on disk or zeroed by the kernel
@@ -168,7 +175,7 @@ paging_init (void)
 
   pd = base_page_dir = palloc_get_page (PAL_ASSERT | PAL_ZERO);
   pt = NULL;
-  for (page = 0; page < ram_pages; page++) 
+  for (page = 0; page < ram_pages; page++)
     {
       uintptr_t paddr = page * PGSIZE;
       char *vaddr = ptov (paddr);
@@ -196,7 +203,7 @@ paging_init (void)
 /* Breaks the kernel command line into words and returns them as
    an argv-like array. */
 static char **
-read_command_line (void) 
+read_command_line (void)
 {
   static char *argv[LOADER_ARGS_LEN / 2 + 1];
   char *p, *end;
@@ -206,7 +213,7 @@ read_command_line (void)
   argc = *(uint32_t *) ptov (LOADER_ARG_CNT);
   p = ptov (LOADER_ARGS);
   end = p + LOADER_ARGS_LEN;
-  for (i = 0; i < argc; i++) 
+  for (i = 0; i < argc; i++)
     {
       if (p >= end)
         PANIC ("command line arguments overflow");
@@ -231,14 +238,14 @@ read_command_line (void)
 /* Parses options in ARGV[]
    and returns the first non-option argument. */
 static char **
-parse_options (char **argv) 
+parse_options (char **argv)
 {
   for (; *argv != NULL && **argv == '-'; argv++)
     {
       char *save_ptr;
       char *name = strtok_r (*argv, "=", &save_ptr);
       char *value = strtok_r (NULL, "", &save_ptr);
-      
+
       if (!strcmp (name, "-h"))
         usage ();
       else if (!strcmp (name, "-q"))
@@ -270,7 +277,7 @@ parse_options (char **argv)
      for reproducibility.  To fix this, give the "-r" option to
      the pintos script to request real-time execution. */
   random_init (rtc_get_time ());
-  
+
   return argv;
 }
 
@@ -279,7 +286,7 @@ static void
 run_task (char **argv)
 {
   const char *task = argv[1];
-  
+
   printf ("Executing '%s':\n", task);
 #ifdef USERPROG
   process_wait (process_execute (task));
@@ -292,10 +299,10 @@ run_task (char **argv)
 /* Executes all of the actions specified in ARGV[]
    up to the null pointer sentinel. */
 static void
-run_actions (char **argv) 
+run_actions (char **argv)
 {
   /* An action. */
-  struct action 
+  struct action
     {
       char *name;                       /* Action name. */
       int argc;                         /* # of args, including action name. */
@@ -303,7 +310,7 @@ run_actions (char **argv)
     };
 
   /* Table of supported actions. */
-  static const struct action actions[] = 
+  static const struct action actions[] =
     {
       {"run", 2, run_task},
 #ifdef FILESYS
@@ -337,7 +344,7 @@ run_actions (char **argv)
       a->function (argv);
       argv += a->argc;
     }
-  
+
 }
 
 /* Prints a kernel command line help message and powers off the
@@ -389,22 +396,22 @@ reboot (void)
 
     /* See [kbd] for details on how to program the keyboard
      * controller. */
-  for (i = 0; i < 100; i++) 
+  for (i = 0; i < 100; i++)
     {
       int j;
 
-      /* Poll keyboard controller's status byte until 
+      /* Poll keyboard controller's status byte until
        * 'input buffer empty' is reported. */
-      for (j = 0; j < 0x10000; j++) 
+      for (j = 0; j < 0x10000; j++)
         {
-          if ((inb (CONTROL_REG) & 0x02) == 0)   
+          if ((inb (CONTROL_REG) & 0x02) == 0)
             break;
           timer_udelay (2);
         }
 
       timer_udelay (50);
 
-      /* Pulse bit 0 of the output port P2 of the keyboard controller. 
+      /* Pulse bit 0 of the output port P2 of the keyboard controller.
        * This will reset the CPU. */
       outb (CONTROL_REG, 0xfe);
       timer_udelay (50);
@@ -414,7 +421,7 @@ reboot (void)
 /* Powers down the machine we're running on,
    as long as we're running on Bochs or QEMU. */
 void
-power_off (void) 
+power_off (void)
 {
   const char s[] = "Shutdown";
   const char *p;
@@ -437,7 +444,7 @@ power_off (void)
 
 /* Print statistics about Pintos execution. */
 static void
-print_stats (void) 
+print_stats (void)
 {
   timer_print_stats ();
   thread_print_stats ();
