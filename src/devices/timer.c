@@ -10,6 +10,7 @@
 
 /*My Implementation*/
 #include "threads/alarm.h"
+#include "threads/fixed-point.h"
 
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -213,6 +214,17 @@ timer_interrupt (struct intr_frame *args UNUSED)
   thread_tick ();
 
   /* My Implementation */
+  if (thread_mlfqs)
+  {
+    thread_current ()->recent_cpu = INT_ADD (thread_current ()->recent_cpu, 1);
+    if (ticks % TIMER_FREQ == 0) /* do this every second */
+      {
+        thread_calculate_load_avg ();
+        thread_calculate_recent_cpu_for_all ();
+      }
+    if (ticks % 4 == 3)
+      thread_calculate_priority_for_all ();
+  }
 //  thread_check_wakeup ();
 
   alarm_check (); /* Check the alarm and wake up threads */

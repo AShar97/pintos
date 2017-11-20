@@ -103,6 +103,9 @@ struct thread
     bool donated; /* whether the thread has been donated priority */
     struct lock *blocked; /* by which lock this thread is blocked */
 
+    int nice;                           /* nice value of a thread */
+    int recent_cpu;                     /* recent cpu usage */
+
 
     /* Owned by thread.c. */
     tid_t tid;                          /* Thread identifier. */
@@ -180,6 +183,15 @@ void thread_set_priority_other (struct thread *, int, bool);
 void thread_yield_head (struct thread *);
 
 bool priority_more_equal (const struct list_elem *, const struct list_elem *, void *);
+
+void thread_calculate_load_avg (void);
+void thread_calculate_recent_cpu (void);
+void thread_calculate_priority (void);
+void thread_calculate_recent_cpu_for_all (void);
+void thread_calculate_priority_for_all (void);
+
+void thread_calculate_priority_other (struct thread *);
+void thread_calculate_recent_cpu_other (struct thread *);
 
 
 #endif /* threads/thread.h */
