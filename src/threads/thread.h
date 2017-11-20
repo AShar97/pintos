@@ -5,6 +5,9 @@
 #include <list.h>
 #include <stdint.h>
 
+/*My Implementation*/
+#include  <kernel/list.h>
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -82,6 +85,10 @@ typedef int tid_t;
    blocked state is on a semaphore wait list. */
 struct thread
   {
+    /*My Implementation*/
+    int orig_priority;  /* add a new variable to store original priority when switching it up */
+    int64_t sleep_ticks;  /* add a new variable to store ticks the thread should sleep */
+
     /* Owned by thread.c. */
     tid_t tid;                          /* Thread identifier. */
     enum thread_status status;          /* Thread state. */
@@ -137,5 +144,18 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+
+/*My Implementation*/
+bool sleep_ticks_less (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
+
+bool priority_more (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
+
+enum intr_level thread_priority_temporarily_up (void);
+void thread_block_till (int64_t ticks);
+void thread_set_next_wakeup (void);
+void thread_check_wakeup(void);
+void thread_priority_restore (enum intr_level old_level);
+
 
 #endif /* threads/thread.h */
